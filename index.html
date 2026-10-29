@@ -1,0 +1,2020 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Library Seat Finder | Campus Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar & Seat Aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(71, 85, 105, 0.8);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.8);
+        }
+
+        /* Seat Chair Top-Down Architectural Effect */
+        .seat-btn {
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .seat-btn:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.04);
+        }
+        .seat-btn:active:not(:disabled) {
+            transform: translateY(0px) scale(0.97);
+        }
+        .seat-backrest {
+            position: absolute;
+            top: -4px;
+            left: 20%;
+            right: 20%;
+            height: 4px;
+            border-radius: 4px 4px 0 0;
+            transition: all 0.2s ease;
+        }
+
+        /* Study Table visual grouping */
+        .study-bay {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.65), rgba(15, 23, 42, 0.85));
+            border: 1px solid rgba(51, 65, 85, 0.6);
+        }
+        html:not(.dark) .study-bay {
+            background: linear-gradient(145deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.95));
+            border: 1px solid rgba(203, 213, 225, 0.9);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white transition-colors duration-200">
+
+    <!-- ================= HEADER / NAVBAR ================= -->
+    <header class="sticky top-0 z-30 backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-3">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="showLibrarySelectionView()">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25 shrink-0">
+                    <i class="fa-solid fa-book-open-reader text-lg"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-extrabold text-sm sm:text-lg tracking-tight bg-gradient-to-r from-indigo-600 to-violet-500 dark:from-indigo-400 dark:to-violet-300 bg-clip-text text-transparent">
+                            Smart Library Seat Finder
+                        </h1>
+                        <span class="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> IoT Sensors Live
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Zones: C1, B1, A3, D5, C3, E2 &bull; 60 Seats/Zone &bull; UID &amp; Physical Occupancy</p>
+                </div>
+            </div>
+
+            <!-- Right Controls -->
+            <div class="flex items-center gap-1.5 sm:gap-2.5">
+                <!-- Simulate Random Sensor Update Button -->
+                <button onclick="simulateRandomSensorUpdate()" title="Simulate IoT Seat Pressure Sensor Activity" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 transition">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                    <span class="hidden md:inline">Simulate Sensor</span>
+                </button>
+
+                <!-- UID Quick Lookup Button -->
+                <button onclick="openUidLookupModal()" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition">
+                    <i class="fa-solid fa-id-card text-indigo-500"></i>
+                    <span class="hidden sm:inline">Find by UID</span>
+                    <span id="myBookingsCountBadge" class="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-indigo-600 text-white hidden">0</span>
+                </button>
+
+                <!-- Reset Demo Button -->
+                <button onclick="openResetConfirmModal()" title="Reset All Seats to Default" class="p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-medium bg-slate-100 hover:bg-rose-500/10 hover:text-rose-500 dark:bg-slate-800 dark:hover:bg-rose-500/20 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span class="hidden lg:inline ml-1">Reset</span>
+                </button>
+
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()" aria-label="Toggle theme" class="p-2 sm:p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition">
+                    <i id="themeIcon" class="fa-solid fa-sun text-amber-400"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+        <!-- STEP PROGRESS BAR & 4-STATE GLOBAL SUMMARY -->
+        <div class="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-slate-900/90 p-3.5 sm:px-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                <button onclick="showLibrarySelectionView()" id="step1Indicator" class="flex items-center gap-2 font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+                    <span class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">1</span>
+                    <span>Choose Library (C1, B1, A3, D5, C3, E2)</span>
+                </button>
+                <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+                <div id="step2Indicator" class="flex items-center gap-2 font-medium text-slate-400 dark:text-slate-500">
+                    <span id="step2Circle" class="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center text-xs font-bold shrink-0">2</span>
+                    <span id="step2Text">Select Seat (1–60) &amp; Choose Booking / Occupancy</span>
+                </div>
+            </div>
+
+            <!-- Overall Campus 4-State Summary -->
+            <div class="flex flex-wrap items-center gap-3 sm:gap-4 text-xs font-medium pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <span class="text-slate-500 dark:text-slate-400">Empty:</span>
+                    <span id="globalEmptyCount" class="font-bold text-emerald-600 dark:text-emerald-400 font-mono">--</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                    <span class="text-slate-500 dark:text-slate-400">Booked:</span>
+                    <span id="globalBookedCount" class="font-bold text-sky-600 dark:text-sky-400 font-mono">--</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                    <span class="text-slate-500 dark:text-slate-400">Booked &amp; Occupied:</span>
+                    <span id="globalBookedOccupiedCount" class="font-bold text-purple-600 dark:text-purple-400 font-mono">--</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
+                    <span class="text-slate-500 dark:text-slate-400">Not Booked (Physically Occupied):</span>
+                    <span id="globalPhysicallyOccupiedCount" class="font-bold text-orange-600 dark:text-orange-400 font-mono">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW 1: LIBRARY SELECTION (FIRST CHOICE) ================= -->
+        <section id="librarySelectionView" class="space-y-6">
+            <!-- Hero Banner -->
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-950 via-slate-900 to-violet-950 text-white p-6 sm:p-8 border border-indigo-500/30 shadow-xl">
+                <div class="relative z-10 max-w-3xl space-y-3">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold">
+                        <i class="fa-solid fa-building-columns"></i> Step 1: Select Your Preferred Library Block
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                        Smart Campus Library Seat &amp; Occupancy Tracker
+                    </h2>
+                    <p class="text-sm sm:text-base text-slate-300 leading-relaxed">
+                        Choose from our 6 specialized libraries (<span class="font-mono font-semibold text-white">C1, B1, A3, D5, C3, E2</span>). Each hall features <span class="font-semibold text-emerald-300">60 sensor-equipped seats</span> tracking 4 live states: <span class="text-emerald-300 font-semibold">Empty</span>, <span class="text-sky-300 font-semibold">Booked (UID)</span>, <span class="text-purple-300 font-semibold">Booked &amp; Occupied</span>, and <span class="text-orange-300 font-semibold">Not Booked but Physically Occupied</span>.
+                    </p>
+                </div>
+                <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+                    <i class="fa-solid fa-chair text-[180px]"></i>
+                </div>
+            </div>
+
+            <!-- 6 Library Cards Grid -->
+            <div id="libraryCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Populated dynamically via JS -->
+            </div>
+        </section>
+
+        <!-- ================= VIEW 2: 60-SEAT GRID & 4-STATE MANAGEMENT ================= -->
+        <section id="seatGridView" class="hidden space-y-6">
+            <!-- Quick Library Switcher Pills + Back Button -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <button onclick="showLibrarySelectionView()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition shrink-0">
+                        <i class="fa-solid fa-arrow-left"></i> All Libraries
+                    </button>
+                    <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 hidden sm:inline shrink-0">Quick Switch:</span>
+                </div>
+
+                <!-- 6 Library Switcher Pills (C1, B1, A3, D5, C3, E2) -->
+                <div id="libraryQuickTabs" class="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+                    <!-- Rendered dynamically -->
+                </div>
+            </div>
+
+            <!-- Active Library Info & Stats Bar -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                <!-- LEFT / CENTER: 60 SEATS FLOOR PLAN (8 cols on lg) -->
+                <div class="lg:col-span-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-sm space-y-5">
+
+                    <!-- Library Title & Filter Controls -->
+                    <div class="flex flex-col gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <div class="flex items-center gap-2.5">
+                                    <span id="activeLibCodeBadge" class="px-3 py-1 rounded-xl font-mono font-extrabold text-lg bg-indigo-600 text-white shadow-sm">C1</span>
+                                    <h2 id="activeLibName" class="text-xl font-bold">Central Science Library</h2>
+                                </div>
+                                <p id="activeLibLocation" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                    Block C &bull; 1st Floor &bull; 60 Reading Seats
+                                </p>
+                            </div>
+
+                            <button onclick="simulateRandomSensorUpdate()" class="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 transition">
+                                <i class="fa-solid fa-wave-square"></i> Trigger Random Seat Sensor
+                            </button>
+                        </div>
+
+                        <!-- 5 Filter Buttons (All, Empty, Booked, Booked & Occupied, Not Booked / Physically Occupied) -->
+                        <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800/90 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700/80 text-xs font-semibold">
+                            <button onclick="setSeatFilter('all')" id="filterAllBtn" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white transition">All (60)</button>
+                            <button onclick="setSeatFilter('empty')" id="filterEmptyBtn" class="px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition">Empty</button>
+                            <button onclick="setSeatFilter('booked')" id="filterBookedBtn" class="px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-sky-500 transition">Booked</button>
+                            <button onclick="setSeatFilter('booked_occupied')" id="filterBookedOccupiedBtn" class="px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-purple-500 transition">Booked &amp; Occupied</button>
+                            <button onclick="setSeatFilter('physically_occupied')" id="filterPhysicallyOccupiedBtn" class="px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-orange-500 transition">Not Booked &bull; Physically Occupied</button>
+                        </div>
+                    </div>
+
+                    <!-- 4-State Color Legend & Live Counters -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-50 dark:bg-slate-950/70 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 text-xs">
+                        <!-- 1. Empty Legend -->
+                        <div class="flex items-center gap-2.5 p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800">
+                            <span class="w-6 h-6 rounded-lg bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                                <i class="fa-solid fa-check"></i>
+                            </span>
+                            <div class="leading-tight">
+                                <span class="font-bold text-slate-700 dark:text-slate-200 block">Empty</span>
+                                <span id="legendEmptyCount" class="font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">0 seats</span>
+                            </div>
+                        </div>
+
+                        <!-- 2. Booked (Reserved Online, Not Seated Yet) -->
+                        <div class="flex items-center gap-2.5 p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800">
+                            <span class="w-6 h-6 rounded-lg bg-sky-500/20 border-2 border-sky-500 flex items-center justify-center text-[10px] font-bold text-sky-600 dark:text-sky-400 shrink-0">
+                                <i class="fa-solid fa-bookmark"></i>
+                            </span>
+                            <div class="leading-tight">
+                                <span class="font-bold text-slate-700 dark:text-slate-200 block">Booked Only</span>
+                                <span id="legendBookedCount" class="font-mono text-[11px] font-bold text-sky-600 dark:text-sky-400">0 seats</span>
+                            </div>
+                        </div>
+
+                        <!-- 3. Booked & Occupied -->
+                        <div class="flex items-center gap-2.5 p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800">
+                            <span class="w-6 h-6 rounded-lg bg-purple-500/20 border-2 border-purple-500 flex items-center justify-center text-[10px] font-bold text-purple-600 dark:text-purple-400 shrink-0">
+                                <i class="fa-solid fa-user-check"></i>
+                            </span>
+                            <div class="leading-tight">
+                                <span class="font-bold text-slate-700 dark:text-slate-200 block">Booked &amp; Occupied</span>
+                                <span id="legendBookedOccupiedCount" class="font-mono text-[11px] font-bold text-purple-600 dark:text-purple-400">0 seats</span>
+                            </div>
+                        </div>
+
+                        <!-- 4. Not Booked but Physically Occupied -->
+                        <div class="flex items-center gap-2.5 p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800">
+                            <span class="w-6 h-6 rounded-lg bg-orange-500/20 border-2 border-orange-500 flex items-center justify-center text-[10px] font-bold text-orange-600 dark:text-orange-400 shrink-0">
+                                <i class="fa-solid fa-person-rays"></i>
+                            </span>
+                            <div class="leading-tight">
+                                <span class="font-bold text-slate-700 dark:text-slate-200 block">Not Booked &bull; Occupied</span>
+                                <span id="legendPhysicallyOccupiedCount" class="font-mono text-[11px] font-bold text-orange-600 dark:text-orange-400">0 seats</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Architectural Orientation Strip (Front Desk / Entry) -->
+                    <div class="flex items-center justify-between gap-2 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-dashed border-slate-300 dark:border-slate-700 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <span><i class="fa-solid fa-door-open text-emerald-500 mr-1.5"></i> Main Entrance</span>
+                        <span><i class="fa-solid fa-microchip text-indigo-400 mr-1.5"></i> Smart Seat Pressure Sensors Active</span>
+                        <span class="hidden sm:inline"><i class="fa-solid fa-plug-circle-bolt text-amber-400 mr-1.5"></i> AC &amp; Power Equipped</span>
+                    </div>
+
+                    <!-- 60 SEATS CONTAINER (Grouped into 6 Study Bays of 10 seats = 60 seats) -->
+                    <div id="seatsGridContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                        <!-- Dynamically populated with 60 seats (#1 to #60) -->
+                    </div>
+
+                    <!-- Bottom Window Orientation Strip -->
+                    <div class="text-center py-2 rounded-xl bg-sky-500/5 border border-sky-500/20 text-[11px] font-medium text-sky-600 dark:text-sky-400">
+                        <i class="fa-regular fa-sun mr-1.5"></i> Panoramic Quiet Study Glass Wall (Seats 51 – 60)
+                    </div>
+                </div>
+
+                <!-- RIGHT SIDEBAR: 4-STATE SEAT ACTION PANEL (4 cols on lg) -->
+                <div class="lg:col-span-4 space-y-5 lg:sticky lg:top-24">
+
+                    <!-- Interactive Seat Action / Booking Card -->
+                    <div id="bookingSideCard" class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm">
+                        <!-- Default State: No Seat Selected -->
+                        <div id="noSeatSelectedPanel" class="text-center py-6 space-y-4">
+                            <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center mx-auto text-2xl">
+                                <i class="fa-solid fa-chair"></i>
+                            </div>
+                            <div class="space-y-1.5">
+                                <h3 class="text-base font-bold">Select Any Seat (1–60)</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+                                    Click an <span class="text-emerald-500 font-semibold">Empty</span> seat to <strong>Book</strong>, <strong>Book &amp; Occupy</strong>, or mark as <strong>Not Booked but Physically Occupied</strong>. You can also click occupied seats to update their status.
+                                </p>
+                            </div>
+                            <div class="pt-2">
+                                <button onclick="autoPickRandomEmptySeat()" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 text-xs font-bold transition flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Pick Next Empty Seat
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- STATE 1 PANEL: EMPTY SEAT SELECTED (3 Action Modes) -->
+                        <div id="emptySeatBookingFormPanel" class="hidden space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center font-mono font-extrabold text-sm" id="formSeatNumberBadge">
+                                        #12
+                                    </div>
+                                    <div>
+                                        <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-500 block">Empty Seat Available</span>
+                                        <h3 class="text-base font-bold" id="formLibraryAndSeatTitle">Library C1 &bull; Seat 12</h3>
+                                    </div>
+                                </div>
+                                <button onclick="clearSelectedSeat()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+
+                            <!-- 3-Way Action Mode Selector -->
+                            <div class="space-y-2">
+                                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    Choose Occupancy / Booking Action:
+                                </label>
+                                <div class="grid grid-cols-1 gap-2">
+                                    <!-- Option 1: Book Only -->
+                                    <button type="button" onclick="setEmptySeatActionMode('booked')" id="modeBtn_booked" class="text-left p-3 rounded-2xl border-2 transition flex items-start gap-3">
+                                        <div class="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-500 flex items-center justify-center shrink-0 mt-0.5">
+                                            <i class="fa-solid fa-bookmark"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="text-xs font-bold text-slate-900 dark:text-white">1. Book Seat (Reserve with UID)</div>
+                                            <div class="text-[11px] text-slate-500 dark:text-slate-400">Reserve online with UID before arriving</div>
+                                        </div>
+                                    </button>
+
+                                    <!-- Option 2: Book & Occupy -->
+                                    <button type="button" onclick="setEmptySeatActionMode('booked_occupied')" id="modeBtn_booked_occupied" class="text-left p-3 rounded-2xl border-2 transition flex items-start gap-3">
+                                        <div class="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-500 flex items-center justify-center shrink-0 mt-0.5">
+                                            <i class="fa-solid fa-user-check"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="text-xs font-bold text-slate-900 dark:text-white">2. Book &amp; Occupy (UID + Sit Now)</div>
+                                            <div class="text-[11px] text-slate-500 dark:text-slate-400">Register UID and physically occupy seat right now</div>
+                                        </div>
+                                    </button>
+
+                                    <!-- Option 3: Not Booked but Physically Occupy -->
+                                    <button type="button" onclick="setEmptySeatActionMode('physically_occupied')" id="modeBtn_physically_occupied" class="text-left p-3 rounded-2xl border-2 transition flex items-start gap-3">
+                                        <div class="w-8 h-8 rounded-xl bg-orange-500/15 text-orange-500 flex items-center justify-center shrink-0 mt-0.5">
+                                            <i class="fa-solid fa-person-rays"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="text-xs font-bold text-slate-900 dark:text-white">3. Not Booked &bull; Physically Occupy</div>
+                                            <div class="text-[11px] text-slate-500 dark:text-slate-400">Sit without UID booking (walk-in / sensor trigger)</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <form id="uidBookingForm" onsubmit="handleSeatBookingSubmit(event)" class="space-y-3.5 pt-1">
+                                <!-- UID & Student Fields (Shown for Mode 1 & Mode 2) -->
+                                <div id="uidFieldsContainer" class="space-y-3.5">
+                                    <div>
+                                        <label for="uidInput" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                                            Student / User UID <span class="text-rose-500">*</span>
+                                        </label>
+                                        <div class="relative">
+                                            <i class="fa-solid fa-id-badge absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                            <input
+                                                type="text"
+                                                id="uidInput"
+                                                placeholder="e.g. 26BAI70620 or 22BCS1048"
+                                                autocomplete="off"
+                                                class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                            >
+                                        </div>
+                                        <p id="uidErrorMsg" class="hidden text-xs text-rose-500 font-medium mt-1.5 flex items-center gap-1">
+                                            <i class="fa-solid fa-circle-exclamation"></i> <span>Please enter a valid UID (minimum 3 characters).</span>
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label for="studentNameInput" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                                            Student Name <span class="text-slate-400 font-normal">(Optional)</span>
+                                        </label>
+                                        <div class="relative">
+                                            <i class="fa-solid fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                            <input
+                                                type="text"
+                                                id="studentNameInput"
+                                                placeholder="e.g. Pritam Bala"
+                                                autocomplete="off"
+                                                class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label for="durationSelect" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                                            Study Duration
+                                        </label>
+                                        <select id="durationSelect" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                                            <option value="1 Hour">1 Hour Quick Study</option>
+                                            <option value="2 Hours" selected>2 Hours Standard Slot</option>
+                                            <option value="4 Hours">4 Hours Deep Work</option>
+                                            <option value="Full Day">Full Day Session</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Info Box for Mode 3 (Not Booked but Physically Occupied) -->
+                                <div id="walkInNoticeBox" class="hidden p-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/30 text-xs text-orange-700 dark:text-orange-300 space-y-1">
+                                    <div class="font-bold flex items-center gap-1.5">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> Unbooked Physical Occupancy
+                                    </div>
+                                    <p class="text-[11px] leading-relaxed opacity-90">
+                                        No UID is required. The seat pressure sensor will mark this seat as <strong>Not Booked but Physically Occupied</strong> until claimed with a UID or vacated.
+                                    </p>
+                                </div>
+
+                                <!-- Dynamic Submit Button -->
+                                <button type="submit" id="sideFormSubmitBtn" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition">
+                                    <i class="fa-solid fa-user-check"></i> <span>Book &amp; Occupy Seat</span>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- STATE 2, 3, 4 PANEL: NON-EMPTY SEAT DETAILS & STATUS TRANSITIONS -->
+                        <div id="bookedSeatDetailsPanel" class="hidden space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-10 h-10 rounded-xl flex items-center justify-center font-mono font-extrabold text-sm" id="bookedSeatBadge">
+                                        #15
+                                    </div>
+                                    <div>
+                                        <span class="text-[11px] font-bold uppercase tracking-wider block" id="bookedStatusLabel">Status</span>
+                                        <h3 class="text-base font-bold" id="bookedSeatTitle">Library C1 &bull; Seat 15</h3>
+                                    </div>
+                                </div>
+                                <button onclick="clearSelectedSeat()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+
+                            <!-- Details Card -->
+                            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2.5 text-xs">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-500 dark:text-slate-400">Seat State:</span>
+                                    <span id="detailStatePill" class="font-bold px-2.5 py-0.5 rounded-full text-[11px]">Booked</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-500 dark:text-slate-400">Booked By UID:</span>
+                                    <span id="bookedUidDisplay" class="font-mono font-bold text-sm px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">26BAI70620</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-500 dark:text-slate-400">Holder / Sensor Info:</span>
+                                    <span id="bookedNameDisplay" class="font-semibold text-slate-800 dark:text-slate-200">Campus Student</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-500 dark:text-slate-400">Timestamp:</span>
+                                    <span id="bookedTimeDisplay" class="font-mono text-slate-700 dark:text-slate-300">10:30 AM</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-500 dark:text-slate-400">Slot / Note:</span>
+                                    <span id="bookedDurationDisplay" class="font-semibold text-emerald-600 dark:text-emerald-400">2 Hours</span>
+                                </div>
+                            </div>
+
+                            <!-- Claim Walk-in Seat with UID Form (Only visible when status === 'physically_occupied') -->
+                            <div id="claimWalkInBox" class="hidden p-4 rounded-2xl bg-orange-500/5 border border-orange-500/30 space-y-3">
+                                <div class="text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-id-card"></i> Claim &amp; Register UID for This Seat
+                                </div>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    Someone is physically sitting here without a booking. Enter a UID below to convert this seat to <strong>Booked &amp; Occupied</strong>:
+                                </p>
+                                <div class="space-y-2">
+                                    <input
+                                        type="text"
+                                        id="claimUidInput"
+                                        placeholder="Enter UID (e.g. 26BAI70620)"
+                                        class="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-mono uppercase focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    >
+                                    <input
+                                        type="text"
+                                        id="claimNameInput"
+                                        placeholder="Student Name (Optional)"
+                                        class="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    >
+                                    <p id="claimUidError" class="hidden text-[11px] text-rose-500 font-semibold">Please enter a valid UID (min 3 chars).</p>
+                                    <button type="button" onclick="claimPhysicallyOccupiedSeatWithUid()" class="w-full py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/20">
+                                        <i class="fa-solid fa-user-check"></i> Convert to Booked &amp; Occupied
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Dynamic State Transition Buttons -->
+                            <div id="seatTransitionActions" class="space-y-2 pt-1">
+                                <!-- Populated dynamically based on whether seat is 'booked', 'booked_occupied', or 'physically_occupied' -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Session Activity in This Browser -->
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> Your Session Seats
+                            </h3>
+                            <span id="recentBookingsCounter" class="text-xs font-mono font-bold text-indigo-500">0</span>
+                        </div>
+                        <div id="recentBookingsList" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= MODAL 1: MOBILE / QUICK SEAT ACTION MODAL ================= -->
+    <div id="bookingModalOverlay" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-3">
+                    <div id="modalSeatBadge" class="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center font-mono font-extrabold text-base">
+                        #1
+                    </div>
+                    <div>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-500 block">Select Seat Status</span>
+                        <h3 id="modalSeatTitle" class="text-lg font-extrabold">Library C1 &bull; Seat 1</h3>
+                    </div>
+                </div>
+                <button onclick="closeBookingModal()" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- 3 Action Options inside Modal -->
+            <div class="grid grid-cols-1 gap-2">
+                <button type="button" onclick="setEmptySeatActionMode('booked')" id="modalModeBtn_booked" class="text-left p-2.5 rounded-xl border-2 transition flex items-center gap-2.5">
+                    <span class="w-7 h-7 rounded-lg bg-sky-500/15 text-sky-500 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-bookmark"></i></span>
+                    <div>
+                        <div class="text-xs font-bold">1. Book Only (Reserve with UID)</div>
+                        <div class="text-[10px] text-slate-500">Reserve seat online before arriving</div>
+                    </div>
+                </button>
+                <button type="button" onclick="setEmptySeatActionMode('booked_occupied')" id="modalModeBtn_booked_occupied" class="text-left p-2.5 rounded-xl border-2 transition flex items-center gap-2.5">
+                    <span class="w-7 h-7 rounded-lg bg-purple-500/15 text-purple-500 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-user-check"></i></span>
+                    <div>
+                        <div class="text-xs font-bold">2. Book &amp; Occupy (UID + Sit Now)</div>
+                        <div class="text-[10px] text-slate-500">Register UID and physically sit now</div>
+                    </div>
+                </button>
+                <button type="button" onclick="setEmptySeatActionMode('physically_occupied')" id="modalModeBtn_physically_occupied" class="text-left p-2.5 rounded-xl border-2 transition flex items-center gap-2.5">
+                    <span class="w-7 h-7 rounded-lg bg-orange-500/15 text-orange-500 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-person-rays"></i></span>
+                    <div>
+                        <div class="text-xs font-bold">3. Not Booked &bull; Physically Occupy</div>
+                        <div class="text-[10px] text-slate-500">Walk-in sit without UID reservation</div>
+                    </div>
+                </button>
+            </div>
+
+            <form onsubmit="handleModalBookingSubmit(event)" class="space-y-4">
+                <div id="modalUidFieldsContainer" class="space-y-3">
+                    <div>
+                        <label for="modalUidInput" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
+                            Enter Your UID <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <i class="fa-solid fa-id-card-clip absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-500"></i>
+                            <input
+                                type="text"
+                                id="modalUidInput"
+                                placeholder="e.g. 26BAI70620"
+                                autocomplete="off"
+                                class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                            >
+                        </div>
+                        <p id="modalUidError" class="hidden text-xs text-rose-500 font-medium mt-1">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> Please enter a valid UID.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label for="modalNameInput" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
+                                Name <span class="text-slate-400 font-normal">(Optional)</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="modalNameInput"
+                                placeholder="Your Name"
+                                class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                            >
+                        </div>
+                        <div>
+                            <label for="modalDurationSelect" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
+                                Duration
+                            </label>
+                            <select id="modalDurationSelect" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                                <option value="1 Hour">1 Hour</option>
+                                <option value="2 Hours" selected>2 Hours</option>
+                                <option value="4 Hours">4 Hours</option>
+                                <option value="Full Day">Full Day</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="modalWalkInNotice" class="hidden p-3 rounded-xl bg-orange-500/10 border border-orange-500/30 text-xs text-orange-600 dark:text-orange-300">
+                    Marks this seat as <strong>Not Booked but Physically Occupied</strong> (no UID required).
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeBookingModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
+                        Cancel
+                    </button>
+                    <button type="submit" id="modalSubmitBtn" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg flex items-center gap-2 transition">
+                        <i class="fa-solid fa-check"></i> <span>Confirm</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MODAL 2: FIND BY UID LOOKUP ================= -->
+    <div id="uidLookupModalOverlay" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-500/15 text-indigo-500 flex items-center justify-center">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold">Find Booked / Occupied Seat by UID</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Search across libraries C1, B1, A3, D5, C3, E2</p>
+                    </div>
+                </div>
+                <button onclick="closeUidLookupModal()" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="flex gap-2">
+                <input
+                    type="text"
+                    id="lookupUidQuery"
+                    oninput="performUidSearch()"
+                    placeholder="Enter UID (e.g. 26BAI70620 or 23BCS)..."
+                    class="flex-1 px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                <button onclick="performUidSearch()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition">
+                    Search
+                </button>
+            </div>
+
+            <div id="uidLookupResults" class="max-h-72 overflow-y-auto space-y-2 pt-1">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL 3: RESET CONFIRMATION ================= -->
+    <div id="resetConfirmModalOverlay" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-500 flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-rotate-right"></i>
+            </div>
+            <h3 class="text-lg font-bold">Reset Library Seat Data?</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                This will restore all 6 libraries (<strong>C1, B1, A3, D5, C3, E2</strong>) back to their initial default distribution of Empty, Booked, Booked &amp; Occupied, and Physically Occupied seats.
+            </p>
+            <div class="flex items-center justify-center gap-3 pt-2">
+                <button onclick="closeResetConfirmModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    Cancel
+                </button>
+                <button onclick="confirmResetAllData()" class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/25">
+                    Yes, Reset Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TOAST NOTIFICATION ================= -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="mt-auto border-t border-slate-200 dark:border-slate-800/80 py-5 text-center text-xs text-slate-500 dark:text-slate-400">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p><strong>Smart Library Seat Finder</strong> &bull; Zones: <span class="font-mono text-indigo-500">C1, B1, A3, D5, C3, E2</span> (60 Seats Each)</p>
+            <p>4-State Real-Time UID &amp; Physical Occupancy System</p>
+        </div>
+    </footer>
+
+    <!-- ================= APPLICATION JAVASCRIPT ================= -->
+    <script>
+        /**
+         * ============================================================================
+         * SMART LIBRARY SEAT FINDER - 4-STATE CONFIGURATION & STATE
+         * ============================================================================
+         * 4 Seat States:
+         * 1. 'empty'               -> Empty (Available)
+         * 2. 'booked'              -> Booked (Reserved with UID, not physically seated yet)
+         * 3. 'booked_occupied'     -> Booked & Occupied (Reserved with UID + physically seated)
+         * 4. 'physically_occupied' -> Not Booked but Physically Occupied (Walk-in / Sensor detected without UID)
+         */
+        const STORAGE_KEY = 'smart_library_seat_finder_v2';
+        const MY_BOOKINGS_KEY = 'smart_library_my_bookings_v2';
+
+        const LIBRARY_METADATA = [
+            {
+                id: 'C1',
+                name: 'Central Block C1 Library',
+                floor: 'Block C • 1st Floor, East Wing',
+                tag: '24/7 Main Reading Hall',
+                accent: 'from-indigo-600 to-blue-600',
+                features: ['High-Speed Wi-Fi', 'AC Hall', 'Smart Sensors'],
+                initialBooked: [2, 7, 14, 21, 33, 40, 49, 58],
+                initialBookedOccupied: [5, 11, 18, 24, 29, 36, 44, 53],
+                initialPhysicallyOccupied: [9, 16, 27, 38, 46, 55]
+            },
+            {
+                id: 'B1',
+                name: 'Engineering & Tech Library B1',
+                floor: 'Block B • Ground Floor, Lab Annex',
+                tag: 'Silent Coding & Study Zone',
+                accent: 'from-emerald-600 to-teal-600',
+                features: ['LAN Ports', 'Ergonomic Chairs', 'Silent Zone'],
+                initialBooked: [1, 8, 15, 22, 30, 38, 47, 54],
+                initialBookedOccupied: [3, 12, 19, 25, 26, 35, 42, 51, 59],
+                initialPhysicallyOccupied: [6, 17, 31, 45, 60]
+            },
+            {
+                id: 'A3',
+                name: 'Academic Research Hall A3',
+                floor: 'Block A • 3rd Floor, North Tower',
+                tag: 'Postgrad & Reference Commons',
+                accent: 'from-violet-600 to-purple-600',
+                features: ['Individual Cubicles', 'Reading Lamps', 'Quiet Zone'],
+                initialBooked: [4, 13, 23, 31, 45, 56],
+                initialBookedOccupied: [9, 17, 28, 37, 50],
+                initialPhysicallyOccupied: [7, 20, 34, 42, 53]
+            },
+            {
+                id: 'D5',
+                name: 'Digital Media & Law Library D5',
+                floor: 'Block D • 5th Floor, Skyline View',
+                tag: 'Panoramic Digital Commons',
+                accent: 'from-amber-600 to-orange-600',
+                features: ['Mac/PC Terminals', 'USB-C Hubs', 'Panoramic View'],
+                initialBooked: [6, 16, 27, 34, 41, 48, 55],
+                initialBookedOccupied: [10, 20, 32, 39, 46, 52, 57],
+                initialPhysicallyOccupied: [4, 14, 25, 43, 50]
+            },
+            {
+                id: 'C3',
+                name: 'Science & Periodicals Library C3',
+                floor: 'Block C • 3rd Floor, West Wing',
+                tag: 'Journals & Group Prep Wing',
+                accent: 'from-cyan-600 to-sky-600',
+                features: ['Discussion Booths', 'Power Strips', 'Air Purifiers'],
+                initialBooked: [2, 11, 18, 29, 39, 44, 52, 60],
+                initialBookedOccupied: [3, 7, 15, 21, 33, 43, 50, 58],
+                initialPhysicallyOccupied: [10, 24, 36, 48, 55]
+            },
+            {
+                id: 'E2',
+                name: 'Innovation & Executive Library E2',
+                floor: 'Block E • 2nd Floor, South Plaza',
+                tag: 'Late-Night Exam Prep Hub',
+                accent: 'from-rose-600 to-pink-600',
+                features: ['24x7 Access', 'Coffee Lounge Nearby', 'Fast Wi-Fi 6'],
+                initialBooked: [5, 12, 19, 30, 42, 53],
+                initialBookedOccupied: [8, 14, 24, 36, 48, 59],
+                initialPhysicallyOccupied: [3, 16, 27, 40, 51]
+            }
+        ];
+
+        const SAMPLE_NAMES = [
+            'Aarav Sharma', 'Diya Patel', 'Rohan Verma', 'Sneha Nair',
+            'Vikramaditya Roy', 'Ananya Gupta', 'Kabir Mehra', 'Ishita Joshi',
+            'Arjun Das', 'Meera Krishnan', 'Siddharth Rao', 'Tanvi Chatterjee'
+        ];
+
+        // State Variables
+        let librariesData = {};
+        let mySessionBookings = [];
+        let activeLibraryId = null;
+        let selectedSeatNumber = null;
+        let currentSeatFilter = 'all'; // 'all' | 'empty' | 'booked' | 'booked_occupied' | 'physically_occupied'
+        let emptySeatActionMode = 'booked_occupied'; // 'booked' | 'booked_occupied' | 'physically_occupied'
+
+        /**
+         * Initialize Application on Window Load
+         */
+        window.addEventListener('DOMContentLoaded', () => {
+            loadOrInitializeState();
+            renderLibrarySelectionCards();
+            updateGlobalHeaderCounts();
+            renderRecentBookingsList();
+            setEmptySeatActionMode('booked_occupied');
+        });
+
+        /**
+         * Load state from localStorage or build deterministic 60-seat data per library
+         */
+        function loadOrInitializeState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                const savedMine = localStorage.getItem(MY_BOOKINGS_KEY);
+                if (saved) {
+                    librariesData = JSON.parse(saved);
+                } else {
+                    librariesData = generateDefaultLibrariesData();
+                    saveStateToStorage();
+                }
+                if (savedMine) {
+                    mySessionBookings = JSON.parse(savedMine);
+                } else {
+                    mySessionBookings = [];
+                }
+            } catch (e) {
+                librariesData = generateDefaultLibrariesData();
+                mySessionBookings = [];
+            }
+        }
+
+        /**
+         * Generate default 60 seats for each of C1, B1, A3, D5, C3, E2 across all 4 states
+         */
+        function generateDefaultLibrariesData() {
+            const data = {};
+            LIBRARY_METADATA.forEach((lib, libIdx) => {
+                const seats = [];
+                for (let s = 1; s <= 60; s++) {
+                    const deptCodes = ['BAI', 'BCS', 'BEC', 'BME', 'BCV', 'BBA'];
+                    const dept = deptCodes[(s + libIdx) % deptCodes.length];
+                    const roll = 70100 + ((s * 37 + libIdx * 53) % 890);
+                    const generatedUid = `26${dept}${roll}`;
+                    const holderName = SAMPLE_NAMES[(s + libIdx) % SAMPLE_NAMES.length];
+                    const timeStr = `${9 + (s % 3)}:${s % 2 === 0 ? '15' : '40'} AM`;
+
+                    if (lib.initialBooked.includes(s)) {
+                        seats.push({
+                            seatNumber: s,
+                            status: 'booked',
+                            uid: generatedUid,
+                            name: holderName,
+                            time: timeStr,
+                            duration: '2 Hours (Reserved)',
+                            isMine: false
+                        });
+                    } else if (lib.initialBookedOccupied.includes(s)) {
+                        seats.push({
+                            seatNumber: s,
+                            status: 'booked_occupied',
+                            uid: generatedUid,
+                            name: holderName,
+                            time: timeStr,
+                            duration: s % 2 === 0 ? '4 Hours (Seated)' : '2 Hours (Seated)',
+                            isMine: false
+                        });
+                    } else if (lib.initialPhysicallyOccupied.includes(s)) {
+                        seats.push({
+                            seatNumber: s,
+                            status: 'physically_occupied',
+                            uid: null,
+                            name: 'Unregistered Walk-In (Sensor Active)',
+                            time: timeStr,
+                            duration: 'No UID Booking',
+                            isMine: false
+                        });
+                    } else {
+                        seats.push({
+                            seatNumber: s,
+                            status: 'empty',
+                            uid: null,
+                            name: null,
+                            time: null,
+                            duration: null,
+                            isMine: false
+                        });
+                    }
+                }
+                data[lib.id] = seats;
+            });
+            return data;
+        }
+
+        function saveStateToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(librariesData));
+                localStorage.setItem(MY_BOOKINGS_KEY, JSON.stringify(mySessionBookings));
+            } catch (e) {
+                console.warn('Storage quota warning:', e);
+            }
+        }
+
+        /**
+         * Calculate 4-State counts for a library
+         */
+        function getLibraryStats(libId) {
+            const seats = librariesData[libId] || [];
+            const total = seats.length; // 60
+            const empty = seats.filter(s => s.status === 'empty').length;
+            const booked = seats.filter(s => s.status === 'booked').length;
+            const bookedOccupied = seats.filter(s => s.status === 'booked_occupied').length;
+            const physicallyOccupied = seats.filter(s => s.status === 'physically_occupied').length;
+            const unavailable = total - empty;
+            const occupancyRate = Math.round((unavailable / total) * 100);
+            return { total, empty, booked, bookedOccupied, physicallyOccupied, unavailable, occupancyRate };
+        }
+
+        /**
+         * Update global header summary counts across all 6 libraries (360 total seats)
+         */
+        function updateGlobalHeaderCounts() {
+            let totalEmpty = 0;
+            let totalBooked = 0;
+            let totalBookedOccupied = 0;
+            let totalPhysicallyOccupied = 0;
+
+            LIBRARY_METADATA.forEach(lib => {
+                const st = getLibraryStats(lib.id);
+                totalEmpty += st.empty;
+                totalBooked += st.booked;
+                totalBookedOccupied += st.bookedOccupied;
+                totalPhysicallyOccupied += st.physicallyOccupied;
+            });
+
+            document.getElementById('globalEmptyCount').textContent = totalEmpty;
+            document.getElementById('globalBookedCount').textContent = totalBooked;
+            document.getElementById('globalBookedOccupiedCount').textContent = totalBookedOccupied;
+            document.getElementById('globalPhysicallyOccupiedCount').textContent = totalPhysicallyOccupied;
+
+            const badge = document.getElementById('myBookingsCountBadge');
+            if (mySessionBookings.length > 0) {
+                badge.textContent = mySessionBookings.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        /**
+         * ============================================================================
+         * VIEW 1: RENDER 6 LIBRARY CARDS (C1, B1, A3, D5, C3, E2) WITH 4 STATES
+         * ============================================================================
+         */
+        function renderLibrarySelectionCards() {
+            const container = document.getElementById('libraryCardsGrid');
+            container.innerHTML = '';
+
+            LIBRARY_METADATA.forEach(lib => {
+                const stats = getLibraryStats(lib.id);
+                const myCountInLib = (librariesData[lib.id] || []).filter(s => s.isMine && s.status !== 'empty').length;
+
+                const card = document.createElement('div');
+                card.className = `group relative rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/60 dark:hover:border-indigo-500/60 p-6 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-200 flex flex-col justify-between cursor-pointer`;
+                card.onclick = () => selectLibrary(lib.id);
+
+                const emptyPct = (stats.empty / 60) * 100;
+                const bookedPct = (stats.booked / 60) * 100;
+                const bookedOccPct = (stats.bookedOccupied / 60) * 100;
+                const physOccPct = (stats.physicallyOccupied / 60) * 100;
+
+                card.innerHTML = `
+                    <div>
+                        <!-- Top Row: Library Code Badge -->
+                        <div class="flex items-start justify-between gap-3 mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br ${lib.accent} text-white flex flex-col items-center justify-center shadow-lg font-mono shrink-0">
+                                    <span class="text-[10px] uppercase tracking-widest opacity-80 leading-none">ZONE</span>
+                                    <span class="text-xl font-extrabold leading-tight">${lib.id}</span>
+                                </div>
+                                <div>
+                                    <span class="inline-block text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">${lib.tag}</span>
+                                    <h3 class="text-lg font-extrabold text-slate-900 dark:text-white group-hover:text-indigo-500 transition">${lib.name}</h3>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">${lib.floor}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4-State Live Breakdown Grid (Total 60 Seats) -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 my-4 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/90 border border-slate-200/70 dark:border-slate-800/80 text-center">
+                            <div class="p-1.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                                <span class="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold uppercase">Empty</span>
+                                <span class="text-base font-mono font-extrabold text-emerald-600 dark:text-emerald-400">${stats.empty}</span>
+                            </div>
+                            <div class="p-1.5 rounded-xl bg-sky-500/5 border border-sky-500/20">
+                                <span class="text-[10px] text-sky-600 dark:text-sky-400 block font-bold uppercase">Booked</span>
+                                <span class="text-base font-mono font-extrabold text-sky-600 dark:text-sky-400">${stats.booked}</span>
+                            </div>
+                            <div class="p-1.5 rounded-xl bg-purple-500/5 border border-purple-500/20">
+                                <span class="text-[10px] text-purple-600 dark:text-purple-400 block font-bold uppercase">Book+Occ</span>
+                                <span class="text-base font-mono font-extrabold text-purple-600 dark:text-purple-400">${stats.bookedOccupied}</span>
+                            </div>
+                            <div class="p-1.5 rounded-xl bg-orange-500/5 border border-orange-500/20">
+                                <span class="text-[10px] text-orange-600 dark:text-orange-400 block font-bold uppercase">Walk-In</span>
+                                <span class="text-base font-mono font-extrabold text-orange-600 dark:text-orange-400">${stats.physicallyOccupied}</span>
+                            </div>
+                        </div>
+
+                        <!-- Multi-Segment 4-State Progress Bar -->
+                        <div class="space-y-1.5 mb-4">
+                            <div class="flex justify-between text-xs font-medium">
+                                <span class="text-slate-500 dark:text-slate-400">60 Seats Distribution</span>
+                                <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">${stats.empty} of 60 Free</span>
+                            </div>
+                            <div class="w-full h-2.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden flex">
+                                <div class="h-full bg-emerald-500 transition-all duration-500" style="width: ${emptyPct}%" title="Empty: ${stats.empty}"></div>
+                                <div class="h-full bg-sky-500 transition-all duration-500" style="width: ${bookedPct}%" title="Booked: ${stats.booked}"></div>
+                                <div class="h-full bg-purple-500 transition-all duration-500" style="width: ${bookedOccPct}%" title="Booked & Occupied: ${stats.bookedOccupied}"></div>
+                                <div class="h-full bg-orange-500 transition-all duration-500" style="width: ${physOccPct}%" title="Not Booked (Physically Occupied): ${stats.physicallyOccupied}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Amenities Pills -->
+                        <div class="flex flex-wrap gap-1.5 mb-5">
+                            ${lib.features.map(f => `
+                                <span class="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300">
+                                    ${f}
+                                </span>
+                            `).join('')}
+                            ${myCountInLib > 0 ? `
+                                <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                                    <i class="fa-solid fa-star mr-1"></i> ${myCountInLib} Active
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button class="w-full py-3 px-4 rounded-xl bg-slate-900 dark:bg-slate-800 group-hover:bg-indigo-600 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-sm">
+                        <span>Open <strong>${lib.id}</strong> Floor Map (60 Seats)</span>
+                        <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        /**
+         * ============================================================================
+         * VIEW SWITCHING: STEP 1 (LIBRARIES) <-> STEP 2 (60 SEATS MAP)
+         * ============================================================================
+         */
+        function selectLibrary(libId) {
+            activeLibraryId = libId;
+            selectedSeatNumber = null;
+            currentSeatFilter = 'all';
+
+            document.getElementById('librarySelectionView').classList.add('hidden');
+            document.getElementById('seatGridView').classList.remove('hidden');
+
+            const step2Circle = document.getElementById('step2Circle');
+            const step2Indicator = document.getElementById('step2Indicator');
+            const step2Text = document.getElementById('step2Text');
+
+            step2Circle.className = 'w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0';
+            step2Indicator.className = 'flex items-center gap-2 font-semibold text-indigo-600 dark:text-indigo-400';
+            step2Text.textContent = `Library ${libId}: Select Seat (1–60) & Choose Action`;
+
+            renderQuickLibraryTabs();
+            renderActiveLibrarySeatMap();
+            updateSideBookingPanel();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showLibrarySelectionView() {
+            activeLibraryId = null;
+            selectedSeatNumber = null;
+
+            document.getElementById('seatGridView').classList.add('hidden');
+            document.getElementById('librarySelectionView').classList.remove('hidden');
+
+            const step2Circle = document.getElementById('step2Circle');
+            const step2Indicator = document.getElementById('step2Indicator');
+            const step2Text = document.getElementById('step2Text');
+
+            step2Circle.className = 'w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center text-xs font-bold shrink-0';
+            step2Indicator.className = 'flex items-center gap-2 font-medium text-slate-400 dark:text-slate-500';
+            step2Text.textContent = 'Select Seat (1–60) & Choose Booking / Occupancy';
+
+            renderLibrarySelectionCards();
+            updateGlobalHeaderCounts();
+        }
+
+        /**
+         * Render Quick Library Switcher Tabs (C1, B1, A3, D5, C3, E2)
+         */
+        function renderQuickLibraryTabs() {
+            const tabContainer = document.getElementById('libraryQuickTabs');
+            tabContainer.innerHTML = '';
+
+            LIBRARY_METADATA.forEach(lib => {
+                const stats = getLibraryStats(lib.id);
+                const isActive = lib.id === activeLibraryId;
+                const btn = document.createElement('button');
+                btn.onclick = () => selectLibrary(lib.id);
+                btn.className = isActive
+                    ? `px-3.5 py-2 rounded-xl font-mono font-bold text-xs sm:text-sm bg-indigo-600 text-white shadow-md shadow-indigo-600/25 flex items-center gap-2 shrink-0 transition`
+                    : `px-3.5 py-2 rounded-xl font-mono font-bold text-xs sm:text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-2 shrink-0 transition`;
+
+                btn.innerHTML = `
+                    <span>${lib.id}</span>
+                    <span class="px-1.5 py-0.5 rounded-md text-[10px] ${isActive ? 'bg-white/20 text-white' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'}">
+                        ${stats.empty} free
+                    </span>
+                `;
+                tabContainer.appendChild(btn);
+            });
+        }
+
+        /**
+         * ============================================================================
+         * RENDER 60 SEATS FLOOR MAP WITH 4 VISUAL STATES
+         * ============================================================================
+         */
+        function renderActiveLibrarySeatMap() {
+            if (!activeLibraryId) return;
+
+            const libMeta = LIBRARY_METADATA.find(l => l.id === activeLibraryId);
+            const seats = librariesData[activeLibraryId];
+            const stats = getLibraryStats(activeLibraryId);
+
+            // Header Info
+            document.getElementById('activeLibCodeBadge').textContent = libMeta.id;
+            document.getElementById('activeLibName').textContent = libMeta.name;
+            document.getElementById('activeLibLocation').textContent =
+                `${libMeta.floor} • ${stats.empty} Empty, ${stats.booked} Booked, ${stats.bookedOccupied} Booked & Occupied, ${stats.physicallyOccupied} Walk-In Occupied`;
+
+            // Legend Counts
+            document.getElementById('legendEmptyCount').textContent = `${stats.empty} seats`;
+            document.getElementById('legendBookedCount').textContent = `${stats.booked} seats`;
+            document.getElementById('legendBookedOccupiedCount').textContent = `${stats.bookedOccupied} seats`;
+            document.getElementById('legendPhysicallyOccupiedCount').textContent = `${stats.physicallyOccupied} seats`;
+
+            updateFilterButtonsUI(stats);
+
+            const gridContainer = document.getElementById('seatsGridContainer');
+            gridContainer.innerHTML = '';
+
+            for (let bayIndex = 0; bayIndex < 6; bayIndex++) {
+                const startSeat = bayIndex * 10 + 1;
+                const endSeat = startSeat + 9;
+                const baySeats = seats.slice(startSeat - 1, endSeat);
+
+                const bayCard = document.createElement('div');
+                bayCard.className = 'study-bay rounded-2xl p-4 space-y-3';
+
+                const emptyInBay = baySeats.filter(s => s.status === 'empty').length;
+
+                bayCard.innerHTML = `
+                    <div class="flex items-center justify-between text-xs border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                        <span class="font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-table-cells text-indigo-400"></i>
+                            Study Table ${bayIndex + 1} <span class="font-mono text-[11px] text-slate-400">(Seats ${startSeat}–${endSeat})</span>
+                        </span>
+                        <span class="text-[11px] font-mono font-semibold ${emptyInBay > 0 ? 'text-emerald-500' : 'text-rose-500'}">
+                            ${emptyInBay}/10 Free
+                        </span>
+                    </div>
+                `;
+
+                const seatsSubGrid = document.createElement('div');
+                seatsSubGrid.className = 'grid grid-cols-5 gap-2.5 pt-1';
+
+                baySeats.forEach(seat => {
+                    const isSelected = selectedSeatNumber === seat.seatNumber;
+                    const st = seat.status; // 'empty' | 'booked' | 'booked_occupied' | 'physically_occupied'
+
+                    const isFilteredOut = currentSeatFilter !== 'all' && currentSeatFilter !== st;
+
+                    const seatBtn = document.createElement('button');
+                    seatBtn.type = 'button';
+                    seatBtn.onclick = () => handleSeatClick(seat.seatNumber);
+
+                    let colorClasses = '';
+                    let backrestColor = '';
+                    let statusIcon = '';
+                    let subLabel = '';
+                    let tooltipText = '';
+
+                    if (isSelected) {
+                        colorClasses = 'bg-indigo-600 text-white border-2 border-indigo-300 ring-4 ring-indigo-500/40 shadow-lg shadow-indigo-600/40';
+                        backrestColor = 'bg-indigo-300';
+                        statusIcon = '<i class="fa-solid fa-hand-pointer text-[9px]"></i>';
+                        subLabel = st === 'empty' ? 'PICKED' : (seat.uid ? seat.uid.slice(0, 6) : 'WALK-IN');
+                    } else if (st === 'empty') {
+                        colorClasses = 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-500/60 hover:border-emerald-400';
+                        backrestColor = 'bg-emerald-500';
+                        statusIcon = '<i class="fa-solid fa-check text-[9px] text-emerald-500"></i>';
+                        subLabel = 'EMPTY';
+                        tooltipText = `Seat #${seat.seatNumber}: Empty (Click to Book, Book & Occupy, or Physically Occupy)`;
+                    } else if (st === 'booked') {
+                        colorClasses = 'bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 border-2 border-sky-500/70';
+                        backrestColor = 'bg-sky-500';
+                        statusIcon = '<i class="fa-solid fa-bookmark text-[9px] text-sky-500"></i>';
+                        subLabel = seat.uid ? seat.uid.slice(0, 6) : 'BOOKED';
+                        tooltipText = `Seat #${seat.seatNumber}: Booked by UID ${seat.uid} (Not physically occupied yet)`;
+                    } else if (st === 'booked_occupied') {
+                        colorClasses = 'bg-purple-500/15 hover:bg-purple-500/25 text-purple-700 dark:text-purple-300 border-2 border-purple-500/80 shadow-sm shadow-purple-500/10';
+                        backrestColor = 'bg-purple-500';
+                        statusIcon = '<i class="fa-solid fa-user-check text-[9px] text-purple-500"></i>';
+                        subLabel = seat.uid ? seat.uid.slice(0, 6) : 'B+OCC';
+                        tooltipText = `Seat #${seat.seatNumber}: Booked & Physically Occupied by UID ${seat.uid}`;
+                    } else if (st === 'physically_occupied') {
+                        colorClasses = 'bg-orange-500/15 hover:bg-orange-500/25 text-orange-700 dark:text-orange-300 border-2 border-orange-500 border-dashed';
+                        backrestColor = 'bg-orange-500';
+                        statusIcon = '<i class="fa-solid fa-person-rays text-[9px] text-orange-500"></i>';
+                        subLabel = 'NO-UID';
+                        tooltipText = `Seat #${seat.seatNumber}: Not Booked but Physically Occupied (Sensor Active)`;
+                    }
+
+                    if (seat.isMine && !isSelected && st !== 'empty') {
+                        colorClasses += ' ring-2 ring-amber-400';
+                    }
+
+                    if (isFilteredOut) {
+                        colorClasses += ' opacity-20 pointer-events-none scale-95';
+                    }
+
+                    seatBtn.className = `seat-btn rounded-xl p-2 flex flex-col items-center justify-center min-h-[60px] ${colorClasses}`;
+                    seatBtn.title = tooltipText;
+
+                    seatBtn.innerHTML = `
+                        <span class="seat-backrest ${backrestColor}"></span>
+                        <div class="flex items-center gap-1 font-mono font-extrabold text-xs sm:text-sm leading-none">
+                            <span>${seat.seatNumber}</span>
+                            ${statusIcon}
+                        </div>
+                        <span class="text-[9px] font-mono font-bold tracking-tighter uppercase mt-1 opacity-90 truncate max-w-full">
+                            ${subLabel}
+                        </span>
+                    `;
+
+                    seatsSubGrid.appendChild(seatBtn);
+                });
+
+                bayCard.appendChild(seatsSubGrid);
+                gridContainer.appendChild(bayCard);
+            }
+        }
+
+        /**
+         * Filter Seats (All / Empty / Booked / Booked & Occupied / Physically Occupied)
+         */
+        function setSeatFilter(filterType) {
+            currentSeatFilter = filterType;
+            renderActiveLibrarySeatMap();
+        }
+
+        function updateFilterButtonsUI(stats) {
+            const buttons = [
+                { id: 'filterAllBtn', key: 'all', label: `All (60)` },
+                { id: 'filterEmptyBtn', key: 'empty', label: `Empty (${stats.empty})` },
+                { id: 'filterBookedBtn', key: 'booked', label: `Booked (${stats.booked})` },
+                { id: 'filterBookedOccupiedBtn', key: 'booked_occupied', label: `Booked & Occupied (${stats.bookedOccupied})` },
+                { id: 'filterPhysicallyOccupiedBtn', key: 'physically_occupied', label: `Not Booked • Occupied (${stats.physicallyOccupied})` }
+            ];
+
+            const activeCls = 'px-3 py-1.5 rounded-xl bg-indigo-600 text-white transition shadow-sm';
+            const inactiveCls = 'px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-indigo-500 transition';
+
+            buttons.forEach(b => {
+                const el = document.getElementById(b.id);
+                if (el) {
+                    el.textContent = b.label;
+                    el.className = currentSeatFilter === b.key ? activeCls : inactiveCls;
+                }
+            });
+        }
+
+        /**
+         * ============================================================================
+         * 3-OPTION MODE SELECTOR FOR EMPTY SEATS
+         * ============================================================================
+         */
+        function setEmptySeatActionMode(mode) {
+            emptySeatActionMode = mode; // 'booked' | 'booked_occupied' | 'physically_occupied'
+
+            const modes = [
+                {
+                    key: 'booked',
+                    activeBorder: 'border-sky-500 bg-sky-500/10',
+                    btnText: 'Book Seat (Reserve with UID)',
+                    btnIcon: 'fa-bookmark',
+                    btnGradient: 'from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 shadow-sky-600/25'
+                },
+                {
+                    key: 'booked_occupied',
+                    activeBorder: 'border-purple-500 bg-purple-500/10',
+                    btnText: 'Book & Occupy Seat Now',
+                    btnIcon: 'fa-user-check',
+                    btnGradient: 'from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-purple-600/25'
+                },
+                {
+                    key: 'physically_occupied',
+                    activeBorder: 'border-orange-500 bg-orange-500/10',
+                    btnText: 'Physically Occupy (No UID)',
+                    btnIcon: 'fa-person-rays',
+                    btnGradient: 'from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 shadow-orange-600/25'
+                }
+            ];
+
+            const inactiveBorder = 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700';
+
+            modes.forEach(m => {
+                const sideBtn = document.getElementById(`modeBtn_${m.key}`);
+                const modalBtn = document.getElementById(`modalModeBtn_${m.key}`);
+                const isSelected = m.key === mode;
+
+                if (sideBtn) {
+                    sideBtn.className = `text-left p-3 rounded-2xl border-2 transition flex items-start gap-3 ${isSelected ? m.activeBorder : inactiveBorder}`;
+                }
+                if (modalBtn) {
+                    modalBtn.className = `text-left p-2.5 rounded-xl border-2 transition flex items-center gap-2.5 ${isSelected ? m.activeBorder : inactiveBorder}`;
+                }
+            });
+
+            // Show/hide UID inputs depending on whether 'physically_occupied' (no UID) is chosen
+            const requiresUid = mode !== 'physically_occupied';
+            document.getElementById('uidFieldsContainer').classList.toggle('hidden', !requiresUid);
+            document.getElementById('walkInNoticeBox').classList.toggle('hidden', requiresUid);
+
+            document.getElementById('modalUidFieldsContainer').classList.toggle('hidden', !requiresUid);
+            document.getElementById('modalWalkInNotice').classList.toggle('hidden', requiresUid);
+
+            const activeCfg = modes.find(m => m.key === mode);
+            const sideSubmitBtn = document.getElementById('sideFormSubmitBtn');
+            if (sideSubmitBtn && activeCfg) {
+                sideSubmitBtn.className = `w-full py-3 px-4 rounded-xl bg-gradient-to-r ${activeCfg.btnGradient} text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 transition`;
+                sideSubmitBtn.innerHTML = `<i class="fa-solid ${activeCfg.btnIcon}"></i> <span>${activeCfg.btnText}</span>`;
+            }
+
+            const modalSubmitBtn = document.getElementById('modalSubmitBtn');
+            if (modalSubmitBtn && activeCfg) {
+                modalSubmitBtn.className = `px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r ${activeCfg.btnGradient} text-white shadow-lg flex items-center gap-2 transition`;
+                modalSubmitBtn.innerHTML = `<i class="fa-solid ${activeCfg.btnIcon}"></i> <span>${activeCfg.btnText}</span>`;
+            }
+        }
+
+        /**
+         * ============================================================================
+         * SEAT CLICK & SIDE PANEL / MODAL WORKFLOW
+         * ============================================================================
+         */
+        function handleSeatClick(seatNumber) {
+            selectedSeatNumber = seatNumber;
+            renderActiveLibrarySeatMap();
+            updateSideBookingPanel();
+
+            const seatObj = librariesData[activeLibraryId].find(s => s.seatNumber === seatNumber);
+
+            if (seatObj && seatObj.status === 'empty') {
+                if (window.innerWidth < 1024) {
+                    openBookingModal(seatNumber);
+                } else if (emptySeatActionMode !== 'physically_occupied') {
+                    const uidInput = document.getElementById('uidInput');
+                    if (uidInput) uidInput.focus();
+                }
+            } else if (seatObj) {
+                if (window.innerWidth < 1024) {
+                    document.getElementById('bookingSideCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+        }
+
+        function clearSelectedSeat() {
+            selectedSeatNumber = null;
+            renderActiveLibrarySeatMap();
+            updateSideBookingPanel();
+        }
+
+        function autoPickRandomEmptySeat() {
+            if (!activeLibraryId) return;
+            const emptySeats = librariesData[activeLibraryId].filter(s => s.status === 'empty');
+            if (emptySeats.length === 0) {
+                showToast('No empty seats left in this library! Try another library block.', 'error');
+                return;
+            }
+            const picked = emptySeats[0];
+            handleSeatClick(picked.seatNumber);
+            showToast(`Auto-selected Empty Seat #${picked.seatNumber} in Library ${activeLibraryId}.`, 'info');
+        }
+
+        /**
+         * Update Right Sidebar Panel for all 4 states
+         */
+        function updateSideBookingPanel() {
+            const noSeatPanel = document.getElementById('noSeatSelectedPanel');
+            const emptyFormPanel = document.getElementById('emptySeatBookingFormPanel');
+            const bookedDetailsPanel = document.getElementById('bookedSeatDetailsPanel');
+
+            document.getElementById('uidErrorMsg').classList.add('hidden');
+
+            if (!activeLibraryId || !selectedSeatNumber) {
+                noSeatPanel.classList.remove('hidden');
+                emptyFormPanel.classList.add('hidden');
+                bookedDetailsPanel.classList.add('hidden');
+                return;
+            }
+
+            const seat = librariesData[activeLibraryId].find(s => s.seatNumber === selectedSeatNumber);
+            if (!seat) return;
+
+            if (seat.status === 'empty') {
+                noSeatPanel.classList.add('hidden');
+                bookedDetailsPanel.classList.add('hidden');
+                emptyFormPanel.classList.remove('hidden');
+
+                document.getElementById('formSeatNumberBadge').textContent = `#${seat.seatNumber}`;
+                document.getElementById('formLibraryAndSeatTitle').textContent = `Library ${activeLibraryId} • Seat ${seat.seatNumber}`;
+                return;
+            }
+
+            // Otherwise Seat is in one of the 3 non-empty states: 'booked', 'booked_occupied', or 'physically_occupied'
+            noSeatPanel.classList.add('hidden');
+            emptyFormPanel.classList.add('hidden');
+            bookedDetailsPanel.classList.remove('hidden');
+
+            const badgeEl = document.getElementById('bookedSeatBadge');
+            const statusLabelEl = document.getElementById('bookedStatusLabel');
+            const statePillEl = document.getElementById('detailStatePill');
+            const claimBox = document.getElementById('claimWalkInBox');
+            const actionsContainer = document.getElementById('seatTransitionActions');
+
+            badgeEl.textContent = `#${seat.seatNumber}`;
+            document.getElementById('bookedSeatTitle').textContent = `Library ${activeLibraryId} • Seat ${seat.seatNumber}`;
+            document.getElementById('bookedUidDisplay').textContent = seat.uid || 'NO UID (WALK-IN)';
+            document.getElementById('bookedNameDisplay').textContent = seat.name || 'Campus Student';
+            document.getElementById('bookedTimeDisplay').textContent = seat.time || 'Just Now';
+            document.getElementById('bookedDurationDisplay').textContent = seat.duration || 'Active Session';
+
+            if (seat.status === 'booked') {
+                badgeEl.className = 'w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-500 flex items-center justify-center font-mono font-extrabold text-sm';
+                statusLabelEl.className = 'text-[11px] font-bold uppercase tracking-wider text-sky-500 block';
+                statusLabelEl.textContent = 'Booked Online (Awaiting Arrival)';
+                statePillEl.className = 'font-bold px-2.5 py-0.5 rounded-full text-[11px] bg-sky-500/15 text-sky-500 border border-sky-500/30';
+                statePillEl.textContent = 'Booked Only';
+                claimBox.classList.add('hidden');
+
+                actionsContainer.innerHTML = `
+                    <button onclick="transitionSeatState('${activeLibraryId}', ${seat.seatNumber}, 'booked_occupied')" class="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition flex items-center justify-center gap-2 shadow-md shadow-purple-600/20">
+                        <i class="fa-solid fa-user-check"></i> Check-In &amp; Physically Occupy Now
+                    </button>
+                    <button onclick="releaseSeatByCoords('${activeLibraryId}', ${seat.seatNumber})" class="w-full py-2.5 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-600 dark:text-rose-400 border border-rose-500/30 font-bold text-xs transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-calendar-xmark"></i> Cancel Booking (Mark Empty)
+                    </button>
+                `;
+            } else if (seat.status === 'booked_occupied') {
+                badgeEl.className = 'w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-500 flex items-center justify-center font-mono font-extrabold text-sm';
+                statusLabelEl.className = 'text-[11px] font-bold uppercase tracking-wider text-purple-500 block';
+                statusLabelEl.textContent = 'Booked & Physically Occupied';
+                statePillEl.className = 'font-bold px-2.5 py-0.5 rounded-full text-[11px] bg-purple-500/15 text-purple-500 border border-purple-500/30';
+                statePillEl.textContent = 'Booked & Occupied';
+                claimBox.classList.add('hidden');
+
+                actionsContainer.innerHTML = `
+                    <button onclick="transitionSeatState('${activeLibraryId}', ${seat.seatNumber}, 'booked')" class="w-full py-2.5 px-4 rounded-xl bg-sky-500/15 hover:bg-sky-500 hover:text-white text-sky-600 dark:text-sky-400 border border-sky-500/30 font-bold text-xs transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-mug-hot"></i> Step Away Temporarily (Keep Booked)
+                    </button>
+                    <button onclick="releaseSeatByCoords('${activeLibraryId}', ${seat.seatNumber})" class="w-full py-2.5 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-600 dark:text-rose-400 border border-rose-500/30 font-bold text-xs transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-door-open"></i> Vacate &amp; Release Seat (Mark Empty)
+                    </button>
+                `;
+            } else if (seat.status === 'physically_occupied') {
+                badgeEl.className = 'w-10 h-10 rounded-xl bg-orange-500/15 border border-orange-500/40 text-orange-500 flex items-center justify-center font-mono font-extrabold text-sm';
+                statusLabelEl.className = 'text-[11px] font-bold uppercase tracking-wider text-orange-500 block';
+                statusLabelEl.textContent = 'Not Booked • Physically Occupied';
+                statePillEl.className = 'font-bold px-2.5 py-0.5 rounded-full text-[11px] bg-orange-500/15 text-orange-500 border border-orange-500/30';
+                statePillEl.textContent = 'Walk-In Occupied (No UID)';
+
+                claimBox.classList.remove('hidden');
+                document.getElementById('claimUidError').classList.add('hidden');
+
+                actionsContainer.innerHTML = `
+                    <button onclick="releaseSeatByCoords('${activeLibraryId}', ${seat.seatNumber})" class="w-full py-2.5 px-4 rounded-xl bg-emerald-500/10 hover:bg-emerald-600 hover:text-white text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold text-xs transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-person-walking-arrow-right"></i> Vacate Walk-In Seat (Mark Empty)
+                    </button>
+                `;
+            }
+        }
+
+        /**
+         * Handle Empty Seat Action Submission from Right Sidebar Form
+         */
+        function handleSeatBookingSubmit(event) {
+            event.preventDefault();
+            const uidInput = document.getElementById('uidInput');
+            const nameInput = document.getElementById('studentNameInput');
+            const durationSelect = document.getElementById('durationSelect');
+            const errorMsg = document.getElementById('uidErrorMsg');
+
+            if (emptySeatActionMode === 'physically_occupied') {
+                completeBookingProcess(activeLibraryId, selectedSeatNumber, 'physically_occupied', null, 'Unregistered Walk-In (Sensor Active)', 'No UID Booking');
+                return;
+            }
+
+            const rawUid = uidInput.value.trim().toUpperCase();
+            const rawName = nameInput.value.trim();
+            const duration = durationSelect.value;
+
+            if (rawUid.length < 3) {
+                errorMsg.classList.remove('hidden');
+                uidInput.focus();
+                return;
+            }
+            errorMsg.classList.add('hidden');
+
+            completeBookingProcess(activeLibraryId, selectedSeatNumber, emptySeatActionMode, rawUid, rawName, duration);
+            uidInput.value = '';
+        }
+
+        /**
+         * Claim a "Not Booked but Physically Occupied" seat by providing a UID -> converts to "Booked & Occupied"
+         */
+        function claimPhysicallyOccupiedSeatWithUid() {
+            const uidInput = document.getElementById('claimUidInput');
+            const nameInput = document.getElementById('claimNameInput');
+            const errEl = document.getElementById('claimUidError');
+
+            const rawUid = uidInput.value.trim().toUpperCase();
+            const rawName = nameInput.value.trim();
+
+            if (rawUid.length < 3) {
+                errEl.classList.remove('hidden');
+                uidInput.focus();
+                return;
+            }
+            errEl.classList.add('hidden');
+
+            const seat = librariesData[activeLibraryId].find(s => s.seatNumber === selectedSeatNumber);
+            if (!seat) return;
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            seat.status = 'booked_occupied';
+            seat.uid = rawUid;
+            seat.name = rawName || `Student (${rawUid})`;
+            seat.time = timeStr;
+            seat.duration = '2 Hours (Claimed & Seated)';
+            seat.isMine = true;
+
+            // Update or add to session list
+            mySessionBookings = mySessionBookings.filter(b => !(b.libId === activeLibraryId && b.seatNumber === selectedSeatNumber));
+            mySessionBookings.unshift({
+                libId: activeLibraryId,
+                seatNumber: selectedSeatNumber,
+                status: 'booked_occupied',
+                uid: rawUid,
+                name: seat.name,
+                time: timeStr,
+                duration: seat.duration
+            });
+
+            uidInput.value = '';
+            nameInput.value = '';
+
+            saveStateToStorage();
+            renderQuickLibraryTabs();
+            renderActiveLibrarySeatMap();
+            updateSideBookingPanel();
+            updateGlobalHeaderCounts();
+            renderRecentBookingsList();
+
+            showToast(`Seat #${selectedSeatNumber} in ${activeLibraryId} claimed by UID ${rawUid} (Booked & Occupied)!`, 'success');
+        }
+
+        /**
+         * Transition between 'booked' and 'booked_occupied'
+         */
+        function transitionSeatState(libId, seatNum, newStatus) {
+            const seat = librariesData[libId].find(s => s.seatNumber === seatNum);
+            if (!seat) return;
+
+            const now = new Date();
+            seat.status = newStatus;
+            seat.time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const sessionEntry = mySessionBookings.find(b => b.libId === libId && b.seatNumber === seatNum);
+            if (sessionEntry) {
+                sessionEntry.status = newStatus;
+            }
+
+            saveStateToStorage();
+            renderQuickLibraryTabs();
+            renderActiveLibrarySeatMap();
+            updateSideBookingPanel();
+            updateGlobalHeaderCounts();
+            renderRecentBookingsList();
+
+            if (newStatus === 'booked_occupied') {
+                showToast(`Checked in! Seat #${seatNum} (${libId}) is now Booked & Physically Occupied.`, 'success');
+            } else {
+                showToast(`Stepped away. Seat #${seatNum} (${libId}) remains Booked under UID ${seat.uid}.`, 'info');
+            }
+        }
+
+        /**
+         * Modal Booking Controls (For Mobile / Quick Popup)
+         */
+        function openBookingModal(seatNumber) {
+            selectedSeatNumber = seatNumber;
+            const overlay = document.getElementById('bookingModalOverlay');
+            document.getElementById('modalSeatBadge').textContent = `#${seatNumber}`;
+            document.getElementById('modalSeatTitle').textContent = `Library ${activeLibraryId} • Seat ${seatNumber}`;
+            document.getElementById('modalUidError').classList.add('hidden');
+
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+
+        function closeBookingModal() {
+            const overlay = document.getElementById('bookingModalOverlay');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        }
+
+        function handleModalBookingSubmit(event) {
+            event.preventDefault();
+            const uidInput = document.getElementById('modalUidInput');
+            const nameInput = document.getElementById('modalNameInput');
+            const durationSelect = document.getElementById('modalDurationSelect');
+            const errorEl = document.getElementById('modalUidError');
+
+            if (emptySeatActionMode === 'physically_occupied') {
+                completeBookingProcess(activeLibraryId, selectedSeatNumber, 'physically_occupied', null, 'Unregistered Walk-In (Sensor Active)', 'No UID Booking');
+                closeBookingModal();
+                return;
+            }
+
+            const rawUid = uidInput.value.trim().toUpperCase();
+            const rawName = nameInput.value.trim();
+            const duration = durationSelect.value;
+
+            if (rawUid.length < 3) {
+                errorEl.classList.remove('hidden');
+                uidInput.focus();
+                return;
+            }
+            errorEl.classList.add('hidden');
+
+            completeBookingProcess(activeLibraryId, selectedSeatNumber, emptySeatActionMode, rawUid, rawName, duration);
+            uidInput.value = '';
+            closeBookingModal();
+        }
+
+        /**
+         * Core Booking / Occupancy Execution for Empty Seats
+         */
+        function completeBookingProcess(libId, seatNum, targetStatus, uid, studentName, duration) {
+            const seat = librariesData[libId].find(s => s.seatNumber === seatNum);
+            if (!seat || seat.status !== 'empty') {
+                showToast('This seat is no longer empty!', 'error');
+                return;
+            }
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            seat.status = targetStatus;
+            seat.uid = targetStatus === 'physically_occupied' ? null : uid;
+            seat.name = targetStatus === 'physically_occupied'
+                ? 'Unregistered Walk-In (Sensor Active)'
+                : (studentName || `Student (${uid})`);
+            seat.time = timeStr;
+            seat.duration = duration;
+            seat.isMine = true;
+
+            mySessionBookings.unshift({
+                libId,
+                seatNumber: seatNum,
+                status: targetStatus,
+                uid: seat.uid || 'WALK-IN',
+                name: seat.name,
+                time: timeStr,
+                duration
+            });
+
+            saveStateToStorage();
+            renderQuickLibraryTabs();
+            renderActiveLibrarySeatMap();
+            updateSideBookingPanel();
+            updateGlobalHeaderCounts();
+            renderRecentBookingsList();
+
+            if (targetStatus === 'booked') {
+                showToast(`Seat #${seatNum} (${libId}) reserved as Booked for UID: ${uid}.`, 'info');
+            } else if (targetStatus === 'booked_occupied') {
+                showToast(`Seat #${seatNum} (${libId}) marked as Booked & Occupied for UID: ${uid}!`, 'success');
+            } else {
+                showToast(`Seat #${seatNum} (${libId}) marked as Not Booked but Physically Occupied.`, 'warning');
+            }
+        }
+
+        /**
+         * Release / Vacate Seat back to Empty
+         */
+        function releaseSeatByCoords(libId, seatNum) {
+            const seat = librariesData[libId].find(s => s.seatNumber === seatNum);
+            if (!seat || seat.status === 'empty') return;
+
+            const prevLabel = seat.uid ? `UID: ${seat.uid}` : 'Walk-In Occupant';
+            seat.status = 'empty';
+            seat.uid = null;
+            seat.name = null;
+            seat.time = null;
+            seat.duration = null;
+            seat.isMine = false;
+
+            mySessionBookings = mySessionBookings.filter(b => !(b.libId === libId && b.seatNumber === seatNum));
+
+            saveStateToStorage();
+
+            if (activeLibraryId === libId) {
+                renderQuickLibraryTabs();
+                renderActiveLibrarySeatMap();
+                updateSideBookingPanel();
+            } else {
+                renderLibrarySelectionCards();
+            }
+            updateGlobalHeaderCounts();
+            renderRecentBookingsList();
+
+            showToast(`Seat #${seatNum} in Library ${libId} (${prevLabel}) is now Empty.`, 'info');
+        }
+
+        /**
+         * Simulate Random IoT Seat Pressure Sensor Activity
+         */
+        function simulateRandomSensorUpdate() {
+            const targetLibId = activeLibraryId || LIBRARY_METADATA[Math.floor(Math.random() * LIBRARY_METADATA.length)].id;
+            const seats = librariesData[targetLibId];
+            const randomSeat = seats[Math.floor(Math.random() * seats.length)];
+            const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            let msg = '';
+            if (randomSeat.status === 'empty') {
+                randomSeat.status = 'physically_occupied';
+                randomSeat.uid = null;
+                randomSeat.name = 'Unregistered Walk-In (Sensor Triggered)';
+                randomSeat.time = nowStr;
+                randomSeat.duration = 'No UID Booking';
+                msg = `Sensor Alert: Seat #${randomSeat.seatNumber} in ${targetLibId} detected a walk-in (Not Booked • Physically Occupied).`;
+            } else if (randomSeat.status === 'booked') {
+                randomSeat.status = 'booked_occupied';
+                randomSeat.time = nowStr;
+                msg = `Sensor Alert: UID ${randomSeat.uid} arrived at Seat #${randomSeat.seatNumber} in ${targetLibId} (Booked & Occupied).`;
+            } else if (randomSeat.status === 'physically_occupied') {
+                randomSeat.status = 'empty';
+                randomSeat.name = null;
+                randomSeat.time = null;
+                randomSeat.duration = null;
+                msg = `Sensor Alert: Walk-in occupant left Seat #${randomSeat.seatNumber} in ${targetLibId} (Now Empty).`;
+            } else {
+                randomSeat.status = 'booked';
+                msg = `Sensor Alert: UID ${randomSeat.uid} stepped away from Seat #${randomSeat.seatNumber} in ${targetLibId} (Booked Only).`;
+            }
+
+            saveStateToStorage();
+            if (activeLibraryId) {
+                renderQuickLibraryTabs();
+                renderActiveLibrarySeatMap();
+                updateSideBookingPanel();
+            } else {
+                renderLibrarySelectionCards();
+            }
+            updateGlobalHeaderCounts();
+            showToast(msg, 'info');
+        }
+
+        /**
+         * Render Recent Session Bookings List in Sidebar
+         */
+        function renderRecentBookingsList() {
+            const listEl = document.getElementById('recentBookingsList');
+            const counterEl = document.getElementById('recentBookingsCounter');
+            counterEl.textContent = mySessionBookings.length;
+
+            if (mySessionBookings.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-4 text-xs text-slate-400">
+                        No seats modified in this session yet. Select any seat on the map!
+                    </div>
+                `;
+                return;
+            }
+
+            const badgeColors = {
+                booked: 'bg-sky-500/15 text-sky-500 border-sky-500/30',
+                booked_occupied: 'bg-purple-500/15 text-purple-500 border-purple-500/30',
+                physically_occupied: 'bg-orange-500/15 text-orange-500 border-orange-500/30'
+            };
+
+            listEl.innerHTML = mySessionBookings.map(b => `
+                <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs">
+                    <div class="flex items-center gap-2.5 cursor-pointer" onclick="jumpToBookedSeat('${b.libId}', ${b.seatNumber})">
+                        <span class="px-2 py-1 rounded-lg border font-mono font-bold ${badgeColors[b.status] || badgeColors.booked}">
+                            ${b.libId} #${b.seatNumber}
+                        </span>
+                        <div>
+                            <span class="font-mono font-bold text-slate-800 dark:text-slate-200 block">${b.uid}</span>
+                            <span class="text-[10px] text-slate-400">${b.status.replace('_', ' ').toUpperCase()} &bull; ${b.time}</span>
+                        </div>
+                    </div>
+                    <button onclick="releaseSeatByCoords('${b.libId}', ${b.seatNumber})" title="Vacate / Release Seat" class="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 transition">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function jumpToBookedSeat(libId, seatNumber) {
+            closeUidLookupModal();
+            selectLibrary(libId);
+            handleSeatClick(seatNumber);
+        }
+
+        /**
+         * ============================================================================
+         * UID LOOKUP MODAL (SEARCH ACROSS C1, B1, A3, D5, C3, E2)
+         * ============================================================================
+         */
+        function openUidLookupModal() {
+            const overlay = document.getElementById('uidLookupModalOverlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            performUidSearch();
+            setTimeout(() => document.getElementById('lookupUidQuery').focus(), 50);
+        }
+
+        function closeUidLookupModal() {
+            const overlay = document.getElementById('uidLookupModalOverlay');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        }
+
+        function performUidSearch() {
+            const query = document.getElementById('lookupUidQuery').value.trim().toUpperCase();
+            const resultsContainer = document.getElementById('uidLookupResults');
+
+            const matches = [];
+            LIBRARY_METADATA.forEach(lib => {
+                const seats = librariesData[lib.id] || [];
+                seats.forEach(s => {
+                    if (s.status !== 'empty') {
+                        const uidStr = (s.uid || 'WALK-IN NO-UID').toUpperCase();
+                        const nameStr = (s.name || '').toUpperCase();
+                        if (!query || uidStr.includes(query) || nameStr.includes(query)) {
+                            matches.push({ libId: lib.id, libName: lib.name, ...s });
+                        }
+                    }
+                });
+            });
+
+            matches.sort((a, b) => (b.isMine ? 1 : 0) - (a.isMine ? 1 : 0));
+
+            if (matches.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-6 text-xs text-slate-400">
+                        No active seats found matching "<strong>${query}</strong>".
+                    </div>
+                `;
+                return;
+            }
+
+            const stateBadges = {
+                booked: '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/15 text-sky-500">Booked Only</span>',
+                booked_occupied: '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/15 text-purple-500">Booked &amp; Occupied</span>',
+                physically_occupied: '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500/15 text-orange-500">Not Booked • Occupied</span>'
+            };
+
+            resultsContainer.innerHTML = matches.slice(0, 30).map(m => `
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-600/15 text-indigo-500 border border-indigo-500/30 font-mono font-extrabold flex flex-col items-center justify-center">
+                            <span class="text-[9px] leading-none">${m.libId}</span>
+                            <span class="text-xs">#${m.seatNumber}</span>
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="font-mono font-bold text-sm text-slate-900 dark:text-white">${m.uid || 'NO UID (Walk-In)'}</span>
+                                ${stateBadges[m.status] || ''}
+                            </div>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">${m.libName} &bull; Seat ${m.seatNumber}</p>
+                        </div>
+                    </div>
+                    <button onclick="jumpToBookedSeat('${m.libId}', ${m.seatNumber})" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shrink-0">
+                        Inspect
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        /**
+         * ============================================================================
+         * RESET DEMO DATA, THEME TOGGLE & TOASTS
+         * ============================================================================
+         */
+        function openResetConfirmModal() {
+            const el = document.getElementById('resetConfirmModalOverlay');
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+        }
+
+        function closeResetConfirmModal() {
+            const el = document.getElementById('resetConfirmModalOverlay');
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        }
+
+        function confirmResetAllData() {
+            librariesData = generateDefaultLibrariesData();
+            mySessionBookings = [];
+            selectedSeatNumber = null;
+            saveStateToStorage();
+            closeResetConfirmModal();
+
+            if (activeLibraryId) {
+                renderQuickLibraryTabs();
+                renderActiveLibrarySeatMap();
+                updateSideBookingPanel();
+            } else {
+                renderLibrarySelectionCards();
+            }
+            updateGlobalHeaderCounts();
+            renderRecentBookingsList();
+            showToast('All 6 libraries (C1, B1, A3, D5, C3, E2) reset to default 4-state seat distribution.', 'info');
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.className = 'fa-solid fa-moon text-slate-700';
+            } else {
+                html.classList.add('dark');
+                icon.className = 'fa-solid fa-sun text-amber-400';
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            const styles = {
+                success: 'bg-emerald-600 border-emerald-400 text-white',
+                error: 'bg-rose-600 border-rose-400 text-white',
+                warning: 'bg-orange-600 border-orange-400 text-white',
+                info: 'bg-indigo-600 border-indigo-400 text-white'
+            };
+            const icons = {
+                success: 'fa-circle-check',
+                error: 'fa-circle-exclamation',
+                warning: 'fa-person-rays',
+                info: 'fa-circle-info'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-xl text-xs sm:text-sm font-semibold transition-all duration-300 ${styles[type] || styles.info}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icons[type] || icons.info} text-base"></i>
+                <span class="flex-1">${message}</span>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
